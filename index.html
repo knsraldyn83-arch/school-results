@@ -1,76 +1,106 @@
-<!DOCTYPE html><html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>نظام النتائج المدرسية</title>
-  <style>
-    body {font-family: Tahoma; background:#f2f2f2; margin:0; padding:0}
-    .container {max-width:600px; margin:40px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px #ccc}
-    h2 {text-align:center}
-    input, button {width:100%; padding:10px; margin:8px 0}
-    button {background:#007bff; color:#fff; border:none; cursor:pointer}
-    button:hover {background:#0056b3}
-    .hidden {display:none}
-    .result {background:#e9ffe9; padding:10px; margin-top:10px; border-radius:5px}
-  </style>
+<meta charset="UTF-8">
+<title>نظام النتائج المدرسية</title>
+<style>
+  body {font-family: Tahoma; background:#f2f2f2; margin:0; padding:0}
+  .container {max-width:600px; margin:40px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px #ccc}
+  h2 {text-align:center}
+  input, button {width:100%; padding:10px; margin:8px 0}
+  button {background:#007bff; color:#fff; border:none; cursor:pointer}
+  button:hover {background:#0056b3}
+  .hidden {display:none}
+  .result {background:#e9ffe9; padding:10px; margin-top:10px; border-radius:5px}
+</style>
 </head>
-<body><div class="container">
+<body>
+
+<div class="container">
   <h2>نظام النتائج المدرسية</h2>
   <button onclick="showTeacher()">واجهة المعلم</button>
   <button onclick="showStudent()">واجهة الطالب</button>
-</div><div class="container hidden" id="teacher">
+</div>
+
+<div class="container hidden" id="teacher">
   <h2>واجهة المعلم (مقفلة)</h2>
   <input type="password" id="pin" placeholder="أدخل القفل الرقمي">
-  <button onclick="unlock()">فتح</button>  <div id="teacherPanel" class="hidden">
+  <button onclick="unlock()">فتح</button>
+  <div id="teacherPanel" class="hidden">
     <input id="t_name" placeholder="اسم الطالب">
     <input id="t_seat" placeholder="رقم الجلوس">
     <input id="t_result" placeholder="النتيجة">
     <button onclick="saveResult()">حفظ النتيجة</button>
+    <button onclick="clearDatabase()">محو قاعدة بيانات الطلاب</button>
     <button onclick="back()">رجوع</button>
   </div>
-</div><div class="container hidden" id="student">
+</div>
+
+<div class="container hidden" id="student">
   <h2>واجهة الطالب</h2>
-  <input id="s_name" placeholder="اسم الطالب">
   <input id="s_seat" placeholder="رقم الجلوس">
   <button onclick="getResult()">عرض النتيجة</button>
   <div id="output"></div>
   <button onclick="back()">رجوع</button>
-</div><script>
-let lockPin = localStorage.getItem('pin') || null;
+</div>
 
-function showTeacher(){
-  hideAll(); document.getElementById('teacher').classList.remove('hidden');
-}
-function showStudent(){
-  hideAll(); document.getElementById('student').classList.remove('hidden');
-}
-function back(){location.reload();}
-function hideAll(){document.querySelectorAll('.container').forEach(c=>c.classList.add('hidden'));}
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-function unlock(){
-  let p = document.getElementById('pin').value;
-  if(!lockPin){ localStorage.setItem('pin', p); lockPin=p; }
-  if(p===lockPin){ document.getElementById('teacherPanel').classList.remove('hidden'); }
-  else alert('القفل غير صحيح');
-}
-
-function saveResult(){
-  let data = {
-    name: t_name.value,
-    seat: t_seat.value,
-    result: t_result.value
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAImNyFTMVJc_aYR4zh9RKUgEVPS_2l2q4",
+    authDomain: "school-results-36615.firebaseapp.com",
+    databaseURL: "https://school-results-36615-default-rtdb.firebaseio.com",
+    projectId: "school-results-36615",
+    storageBucket: "school-results-36615.appspot.com",
+    messagingSenderId: "629737892578",
+    appId: "1:629737892578:web:f9e056460e513a5785ccbb"
   };
-  let key = data.name + '_' + data.seat;
-  localStorage.setItem(key, JSON.stringify(data));
-  alert('تم حفظ النتيجة');
-}
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
 
-function getResult(){
-  let key = s_name.value + '_' + s_seat.value;
-  let data = localStorage.getItem(key);
-  if(data){
-    let d = JSON.parse(data);
-    output.innerHTML = `<div class='result'>الاسم: ${d.name}<br>النتيجة: ${d.result}</div>`;
-  } else output.innerHTML='لا توجد نتيجة';
-}
-</script></body>
+  function showTeacher(){ hideAll(); document.getElementById('teacher').classList.remove('hidden'); }
+  function showStudent(){ hideAll(); document.getElementById('student').classList.remove('hidden'); }
+  function back(){ location.reload(); }
+  function hideAll(){document.querySelectorAll('.container').forEach(c=>c.classList.add('hidden'));}
+
+  function unlock(){
+    const pin = document.getElementById('pin').value;
+    database.ref('teacherPassword').once('value').then(snap => {
+      if(snap.val() === pin){ document.getElementById('teacherPanel').classList.remove('hidden'); }
+      else alert('القفل غير صحيح');
+    });
+  }
+
+  function saveResult(){
+    const name = document.getElementById('t_name').value;
+    const seat = document.getElementById('t_seat').value;
+    const result = document.getElementById('t_result').value;
+    if(!name || !seat || !result){ alert('الرجاء ملء كل الحقول'); return; }
+    database.ref('students/' + seat).set({name, result})
+      .then(()=>alert('تم حفظ النتيجة'))
+      .catch(err=>alert('حدث خطأ: '+err));
+  }
+
+  function getResult(){
+    const seat = document.getElementById('s_seat').value;
+    if(!seat){ alert('ادخل رقم الجلوس'); return; }
+    database.ref('students/' + seat).once('value').then(snap=>{
+      if(snap.exists()){ const d = snap.val();
+        document.getElementById('output').innerHTML = `<div class='result'>الاسم: ${d.name}<br>النتيجة: ${d.result}</div>`;
+      } else document.getElementById('output').innerHTML='لا توجد نتيجة';
+    });
+  }
+
+  function clearDatabase(){
+    if(confirm("هل أنت متأكد أنك تريد مسح جميع نتائج الطلاب؟")){
+      database.ref('students').remove()
+        .then(()=>alert('تم مسح قاعدة البيانات'))
+        .catch(err=>alert('حدث خطأ: '+err));
+    }
+  }
+</script>
+</body>
 </html>
