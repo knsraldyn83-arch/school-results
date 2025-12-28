@@ -66,12 +66,14 @@
   function back(){ location.reload(); }
   function hideAll(){document.querySelectorAll('.container').forEach(c=>c.classList.add('hidden'));}
 
+  // كلمة السر ثابتة 2006
   function unlock(){
     const pin = document.getElementById('pin').value;
-    database.ref('teacherPassword').once('value').then(snap => {
-      if(snap.val() === pin){ document.getElementById('teacherPanel').classList.remove('hidden'); }
-      else alert('القفل غير صحيح');
-    });
+    if(pin === "2006"){ 
+      document.getElementById('teacherPanel').classList.remove('hidden');
+    } else {
+      alert('القفل غير صحيح');
+    }
   }
 
   function saveResult(){
