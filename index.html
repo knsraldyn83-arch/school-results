@@ -1,178 +1,179 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <title>نظام النتائج المدرسية</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-  direction: rtl;
-  text-align: center;
-}
-
-.container {
-  background: #fff;
-  padding: 20px;
-  margin: 20px auto;
-  width: 95%;
-  max-width: 800px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px #ccc;
-}
-
-input, button {
-  padding: 8px;
-  margin: 5px;
-}
-
-button {
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #0056b3;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
-}
+body {font-family: Tahoma; background:#f2f2f2; margin:0; padding:0}
+.container {max-width:600px; margin:40px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px #ccc}
+h2 {text-align:center}
+input, button {width:100%; padding:10px; margin:8px 0}
+button {background:#007bff; color:#fff; border:none; cursor:pointer}
+button:hover {background:#0056b3}
+.hidden {display:none}
+.result {background:#e9ffe9; padding:10px; margin-top:10px; border-radius:5px}
+table {width:100%; border-collapse: collapse; margin-top: 15px;}
+th, td {border:1px solid #ccc; padding:7px; text-align:center;}
 </style>
 </head>
-
 <body>
 
 <div class="container">
   <h2>نظام النتائج المدرسية</h2>
-
-  <!-- إضافة طالب واحد -->
-  <h3>إضافة طالب</h3>
-  <input id="name" placeholder="اسم الطالب">
-  <input id="number" placeholder="رقم الجلوس">
-  <input id="grade" placeholder="النتيجة">
-  <button onclick="addStudent()">إضافة</button>
-
-  <hr>
-
-  <!-- إضافة جماعية -->
-  <h3>إضافة عدة طلاب (CSV)</h3>
-  <input type="file" id="fileInput" accept=".csv">
-  <button onclick="importCSV()">إضافة من ملف</button>
-
-  <hr>
-
-  <!-- جدول -->
-  <table>
-    <thead>
-      <tr>
-        <th>الاسم</th>
-        <th>رقم الجلوس</th>
-        <th>النتيجة</th>
-        <th>تعديل</th>
-        <th>حذف</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+  <button onclick="showTeacher()">واجهة المعلم</button>
+  <button onclick="showStudent()">واجهة الطالب</button>
 </div>
 
-<script>
-let students = JSON.parse(localStorage.getItem("students")) || [];
+<!-- واجهة المعلم -->
+<div class="container hidden" id="teacher">
+  <h2>واجهة المعلم (مقفلة)</h2>
+  <input type="password" id="pin" placeholder="أدخل القفل الرقمي">
+  <button onclick="unlock()">فتح</button>
 
-function save() {
-  localStorage.setItem("students", JSON.stringify(students));
+  <div id="teacherPanel" class="hidden">
+    <h3>إضافة طالب فردي</h3>
+    <input id="t_name" placeholder="اسم الطالب">
+    <input id="t_seat" placeholder="رقم الجلوس">
+    <input id="t_result" placeholder="النتيجة">
+    <button onclick="saveResult()">حفظ النتيجة</button>
+    <button onclick="clearDatabase()">محو قاعدة بيانات الطلاب</button>
+    <hr>
+    <h3>جدول الطلاب</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>رقم الجلوس</th>
+          <th>الاسم</th>
+          <th>النتيجة</th>
+          <th>تعديل</th>
+          <th>حذف</th>
+        </tr>
+      </thead>
+      <tbody id="studentsTable"></tbody>
+    </table>
+    <button onclick="back()">رجوع</button>
+  </div>
+</div>
+
+<!-- واجهة الطالب -->
+<div class="container hidden" id="student">
+  <h2>واجهة الطالب</h2>
+  <input id="s_seat" placeholder="رقم الجلوس">
+  <button onclick="getResult()">عرض النتيجة</button>
+  <div id="output"></div>
+  <button onclick="back()">رجوع</button>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAImNyFTMVJc_aYR4zh9RKUgEVPS_2l2q4",
+  authDomain: "school-results-36615.firebaseapp.com",
+  databaseURL: "https://school-results-36615-default-rtdb.firebaseio.com",
+  projectId: "school-results-36615",
+  storageBucket: "school-results-36615.appspot.com",
+  messagingSenderId: "629737892578",
+  appId: "1:629737892578:web:f9e056460e513a5785ccbb"
+};
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+/* التنقل بين الواجهتين */
+function showTeacher(){ hideAll(); document.getElementById('teacher').classList.remove('hidden'); }
+function showStudent(){ hideAll(); document.getElementById('student').classList.remove('hidden'); }
+function back(){ location.reload(); }
+function hideAll(){document.querySelectorAll('.container').forEach(c=>c.classList.add('hidden'));}
+
+/* فتح واجهة المعلم */
+function unlock(){
+  const pin = document.getElementById('pin').value;
+  if(pin === "2006"){ 
+    document.getElementById('teacherPanel').classList.remove('hidden');
+    loadStudents();
+  } else {
+    alert('القفل غير صحيح');
+  }
 }
 
-function render() {
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
-  students.forEach((s, i) => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${s.name}</td>
-        <td>${s.number}</td>
-        <td>${s.grade}</td>
-        <td><button onclick="editStudent(${i})">تعديل</button></td>
-        <td><button onclick="deleteStudent(${i})">حذف</button></td>
-      </tr>
-    `;
+/* إضافة طالب فردي */
+function saveResult(){
+  const name = document.getElementById('t_name').value;
+  const seat = document.getElementById('t_seat').value;
+  const result = document.getElementById('t_result').value;
+  if(!name || !seat || !result){ alert('الرجاء ملء كل الحقول'); return; }
+  database.ref('students/' + seat).set({name, result})
+    .then(()=>{ alert('تم حفظ النتيجة'); loadStudents(); })
+    .catch(err=>alert('حدث خطأ: '+err));
+}
+
+/* تحميل وعرض الطلاب في الجدول */
+function loadStudents(){
+  database.ref('students').once('value').then(snapshot=>{
+    const table = document.getElementById('studentsTable');
+    table.innerHTML = '';
+    snapshot.forEach(child=>{
+      const seat = child.key;
+      const data = child.val();
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${seat}</td>
+        <td>${data.name}</td>
+        <td>${data.result}</td>
+        <td><button onclick="editRow('${seat}')">تعديل</button></td>
+        <td><button onclick="deleteRow('${seat}')">حذف</button></td>
+      `;
+      table.appendChild(row);
+    });
   });
 }
 
-function addStudent() {
-  let name = document.getElementById("name").value;
-  let number = document.getElementById("number").value;
-  let grade = document.getElementById("grade").value;
-
-  if (!name || !number || !grade) {
-    alert("أدخل كل البيانات");
-    return;
-  }
-
-  students.push({ name, number, grade });
-  save();
-  render();
-
-  document.getElementById("name").value = "";
-  document.getElementById("number").value = "";
-  document.getElementById("grade").value = "";
-}
-
-function editStudent(i) {
-  let name = prompt("تعديل الاسم", students[i].name);
-  let number = prompt("تعديل رقم الجلوس", students[i].number);
-  let grade = prompt("تعديل النتيجة", students[i].grade);
-
-  if (name && number && grade) {
-    students[i] = { name, number, grade };
-    save();
-    render();
-  }
-}
-
-function deleteStudent(i) {
-  if (confirm("هل تريد الحذف؟")) {
-    students.splice(i, 1);
-    save();
-    render();
-  }
-}
-
-function importCSV() {
-  const file = document.getElementById("fileInput").files[0];
-  if (!file) return alert("اختر ملف CSV");
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    const lines = e.target.result.split("\n");
-    for (let i = 1; i < lines.length; i++) {
-      let [name, number, grade] = lines[i].split(",");
-      if (name && number && grade) {
-        students.push({
-          name: name.trim(),
-          number: number.trim(),
-          grade: grade.trim()
-        });
+/* تعديل طالب في الجدول */
+function editRow(seat){
+  database.ref('students/' + seat).once('value').then(snap=>{
+    if(snap.exists()){
+      const data = snap.val();
+      const newName = prompt('الاسم:', data.name);
+      const newResult = prompt('النتيجة:', data.result);
+      if(newName && newResult){
+        database.ref('students/' + seat).set({name:newName,result:newResult})
+          .then(()=>loadStudents())
+          .catch(err=>alert('حدث خطأ: '+err));
       }
     }
-    save();
-    render();
-  };
-  reader.readAsText(file);
+  });
 }
 
-render();
+/* حذف طالب من الجدول */
+function deleteRow(seat){
+  if(confirm('هل تريد حذف الطالب؟')){
+    database.ref('students/' + seat).remove()
+      .then(()=>loadStudents())
+      .catch(err=>alert('حدث خطأ: '+err));
+  }
+}
+
+/* عرض نتيجة الطالب */
+function getResult(){
+  const seat = document.getElementById('s_seat').value;
+  if(!seat){ alert('ادخل رقم الجلوس'); return; }
+  database.ref('students/' + seat).once('value').then(snap=>{
+    if(snap.exists()){ const d = snap.val();
+      document.getElementById('output').innerHTML = `<div class='result'>الاسم: ${d.name}<br>النتيجة: ${d.result}</div>`;
+    } else document.getElementById('output').innerHTML='لا توجد نتيجة';
+  });
+}
+
+/* مسح قاعدة البيانات */
+function clearDatabase(){
+  if(confirm("هل أنت متأكد أنك تريد مسح جميع نتائج الطلاب؟")){
+    database.ref('students').remove()
+      .then(()=>{ alert('تم مسح قاعدة البيانات'); loadStudents(); })
+      .catch(err=>alert('حدث خطأ: '+err));
+  }
+}
 </script>
 
 </body>
