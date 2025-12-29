@@ -98,15 +98,44 @@ function unlock(){
   }
 }
 
-/* إضافة طالب فردي */
+/* إضافة طالب فردي مع التحقق من رقم الجلوس والاسم */
 function saveResult(){
-  const name = document.getElementById('t_name').value;
-  const seat = document.getElementById('t_seat').value;
-  const result = document.getElementById('t_result').value;
-  if(!name || !seat || !result){ alert('الرجاء ملء كل الحقول'); return; }
-  database.ref('students/' + seat).set({name, result})
-    .then(()=>{ alert('تم حفظ النتيجة'); loadStudents(); })
-    .catch(err=>alert('حدث خطأ: '+err));
+  const name = document.getElementById('t_name').value.trim();
+  const seat = document.getElementById('t_seat').value.trim();
+  const result = document.getElementById('t_result').value.trim();
+
+  if(!name || !seat || !result){ 
+    alert('الرجاء ملء كل الحقول'); 
+    return; 
+  }
+
+  database.ref('students').once('value').then(snapshot=>{
+    let exists = false;
+    snapshot.forEach(child=>{
+      const data = child.val();
+      const key = child.key;
+      // إذا رقم الجلوس موجود أو الاسم موجود مسبقًا
+      if(key === seat || data.name === name){
+        exists = true;
+      }
+    });
+
+    if(exists){
+      alert('البيانات موجودة بالفعل'); // يظهر إذا الاسم أو رقم الجلوس موجود
+    } else {
+      // حفظ الطالب الجديد
+      database.ref('students/' + seat).set({name, result})
+        .then(()=>{
+          alert('تم حفظ النتيجة');
+          loadStudents(); // تحديث الجدول
+          // مسح الحقول بعد الحفظ
+          document.getElementById('t_name').value = '';
+          document.getElementById('t_seat').value = '';
+          document.getElementById('t_result').value = '';
+        })
+        .catch(err=>alert('حدث خطأ: '+err));
+    }
+  });
 }
 
 /* تحميل وعرض الطلاب في الجدول */
@@ -162,7 +191,10 @@ function getResult(){
   database.ref('students/' + seat).once('value').then(snap=>{
     if(snap.exists()){ const d = snap.val();
       document.getElementById('output').innerHTML = `<div class='result'>الاسم: ${d.name}<br>النتيجة: ${d.result}</div>`;
-    } else document.getElementById('output').innerHTML='لا توجد نتيجة';
+    } else {
+      document.getElementById('output').innerHTML='لا توجد نتيجة';
+    }
+    document.getElementById('s_seat').value = ''; // مسح الحقل بعد العرض
   });
 }
 
