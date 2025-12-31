@@ -2,7 +2,15 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>نظام النتائج المدرسية</title>
+
+<title>منصة مدارس كفاح البروف – نتائج الطلاب والاستعلام برقم الجلوس</title>
+
+<meta name="description" content="منصة مدارس كفاح البروف هي منصة تعليمية إلكترونية للاستعلام عن نتائج الطلاب باستخدام رقم الجلوس أو الاسم بكل سهولة وسرعة.">
+
+<meta name="keywords" content="منصة مدارس كفاح البروف, مدارس كفاح البروف, نتائج مدارس كفاح البروف, نتائج الطلاب, نتيجة طالب, نتائج المدرسة, نتيجة برقم الجلوس, نتائج 2025, school results, student results">
+
+<meta name="author" content="إدارة مدارس كفاح البروف">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
@@ -12,16 +20,26 @@ body{
   padding:0;
 }
 
+.intro{
+  max-width:600px;
+  margin:30px auto 0;
+  background:#fff;
+  padding:15px;
+  border-radius:8px;
+  box-shadow:0 0 8px #ddd;
+  text-align:center;
+}
+
 .container{
   max-width:600px;
-  margin:40px auto;
+  margin:20px auto 40px;
   background:#fff;
   padding:20px;
   border-radius:8px;
   box-shadow:0 0 10px #ccc;
 }
 
-h2{text-align:center;}
+h1,h2{text-align:center;}
 
 input,button{
   width:100%;
@@ -59,7 +77,6 @@ th,td{
   text-align:center;
 }
 
-/* زر الرجوع */
 .back-btn{
   background:#6c757d;
   margin-bottom:10px;
@@ -73,6 +90,18 @@ th,td{
 
 <body>
 
+<!-- النص التعريفي -->
+<div class="intro">
+  <h1>منصة مدارس كفاح البروف</h1>
+  <p>
+    منصة إلكترونية تعليمية لعرض <strong>نتائج الطلاب</strong>،
+    تمكّن الطلاب وأولياء الأمور من
+    الاستعلام عن النتيجة باستخدام
+    <strong>رقم الجلوس أو الاسم</strong>
+    بسهولة وسرعة دون الحاجة للحضور إلى المدرسة.
+  </p>
+</div>
+
 <!-- الواجهة الرئيسية -->
 <div class="container" id="home">
   <h2>نظام النتائج المدرسية</h2>
@@ -82,8 +111,6 @@ th,td{
 
 <!-- واجهة المعلم -->
 <div class="container hidden" id="teacher">
-
-  <!-- زر رجوع ثابت -->
   <button class="back-btn" onclick="back()">⬅ رجوع</button>
 
   <h2>واجهة المعلم (مقفلة)</h2>
@@ -91,12 +118,12 @@ th,td{
   <button onclick="unlock()">فتح</button>
 
   <div id="teacherPanel" class="hidden">
-    <h3>إضافة طالب فردي</h3>
+    <h3>إضافة طالب</h3>
     <input id="t_name" placeholder="اسم الطالب">
     <input id="t_seat" placeholder="رقم الجلوس">
     <input id="t_result" placeholder="النتيجة">
     <button onclick="saveResult()">حفظ النتيجة</button>
-    <button onclick="clearDatabase()">محو قاعدة بيانات الطلاب</button>
+    <button onclick="clearDatabase()">محو قاعدة البيانات</button>
 
     <hr>
 
@@ -114,7 +141,6 @@ th,td{
       <tbody id="studentsTable"></tbody>
     </table>
   </div>
-
 </div>
 
 <!-- واجهة الطالب -->
@@ -144,84 +170,54 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* التنقل */
 function hideAll(){
   document.querySelectorAll('.container')
-    .forEach(c=>c.classList.add('hidden'));
+  .forEach(c=>c.classList.add('hidden'));
 }
 
-function showTeacher(){
-  hideAll();
-  document.getElementById('teacher').classList.remove('hidden');
-}
+function showTeacher(){hideAll();teacher.classList.remove('hidden');}
+function showStudent(){hideAll();student.classList.remove('hidden');}
+function back(){hideAll();home.classList.remove('hidden');}
 
-function showStudent(){
-  hideAll();
-  document.getElementById('student').classList.remove('hidden');
-}
-
-function back(){
-  hideAll();
-  document.getElementById('home').classList.remove('hidden');
-}
-
-/* فتح واجهة المعلم */
 function unlock(){
-  const pin = document.getElementById('pin').value;
-  if(pin === "2006"){
-    document.getElementById('teacherPanel').classList.remove('hidden');
+  if(pin.value==="2006"){
+    teacherPanel.classList.remove('hidden');
     loadStudents();
-  }else{
-    alert('القفل غير صحيح');
-  }
+  }else alert('القفل غير صحيح');
 }
 
-/* حفظ طالب */
 function saveResult(){
-  const name = t_name.value.trim();
-  const seat = t_seat.value.trim();
-  const result = t_result.value.trim();
+  const name=t_name.value.trim();
+  const seat=t_seat.value.trim();
+  const result=t_result.value.trim();
+  if(!name||!seat||!result) return alert('املأ كل الحقول');
 
-  if(!name || !seat || !result){
-    alert('الرجاء ملء كل الحقول');
-    return;
-  }
-
-  database.ref('students').once('value').then(snapshot=>{
-    let exists=false;
-    snapshot.forEach(child=>{
-      if(child.key===seat || child.val().name===name){
-        exists=true;
-      }
+  database.ref('students').once('value').then(s=>{
+    let ex=false;
+    s.forEach(c=>{
+      if(c.key===seat||c.val().name===name) ex=true;
     });
-
-    if(exists){
-      alert('البيانات موجودة بالفعل');
-    }else{
-      database.ref('students/'+seat).set({name,result})
-      .then(()=>{
-        alert('تم حفظ النتيجة');
-        t_name.value='';
-        t_seat.value='';
-        t_result.value='';
+    if(ex) alert('البيانات موجودة بالفعل');
+    else{
+      database.ref('students/'+seat).set({name,result}).then(()=>{
+        t_name.value=t_seat.value=t_result.value='';
         loadStudents();
       });
     }
   });
 }
 
-/* تحميل الطلاب */
 function loadStudents(){
-  database.ref('students').once('value').then(snapshot=>{
-    studentsTable.innerHTML='';
-    snapshot.forEach(child=>{
+  studentsTable.innerHTML='';
+  database.ref('students').once('value').then(s=>{
+    s.forEach(c=>{
       studentsTable.innerHTML+=`
       <tr>
-        <td>${child.key}</td>
-        <td>${child.val().name}</td>
-        <td>${child.val().result}</td>
-        <td><button onclick="editRow('${child.key}')">تعديل</button></td>
-        <td><button onclick="deleteRow('${child.key}')">حذف</button></td>
+        <td>${c.key}</td>
+        <td>${c.val().name}</td>
+        <td>${c.val().result}</td>
+        <td><button onclick="editRow('${c.key}')">تعديل</button></td>
+        <td><button onclick="deleteRow('${c.key}')">حذف</button></td>
       </tr>`;
     });
   });
@@ -229,52 +225,31 @@ function loadStudents(){
 
 function editRow(seat){
   database.ref('students/'+seat).once('value').then(s=>{
-    if(s.exists()){
-      const n=prompt('الاسم',s.val().name);
-      const r=prompt('النتيجة',s.val().result);
-      if(n && r){
-        database.ref('students/'+seat).set({name:n,result:r})
-        .then(loadStudents);
-      }
-    }
+    if(!s.exists())return;
+    const n=prompt('الاسم',s.val().name);
+    const r=prompt('النتيجة',s.val().result);
+    if(n&&r) database.ref('students/'+seat).set({name:n,result:r}).then(loadStudents);
   });
 }
 
 function deleteRow(seat){
-  if(confirm('هل تريد حذف الطالب؟')){
-    database.ref('students/'+seat).remove()
-    .then(loadStudents);
-  }
+  if(confirm('حذف الطالب؟'))
+    database.ref('students/'+seat).remove().then(loadStudents);
 }
 
 function getResult(){
-  const seat=s_seat.value;
-  if(!seat){
-    alert('ادخل رقم الجلوس');
-    return;
-  }
-  database.ref('students/'+seat).once('value').then(s=>{
-    if(s.exists()){
-      output.innerHTML=
-      `<div class="result">
-        الاسم: ${s.val().name}<br>
-        النتيجة: ${s.val().result}
-      </div>`;
-    }else{
-      output.innerHTML='لا توجد نتيجة';
-    }
+  if(!s_seat.value)return alert('ادخل رقم الجلوس');
+  database.ref('students/'+s_seat.value).once('value').then(s=>{
+    output.innerHTML=s.exists()?
+    `<div class="result">الاسم: ${s.val().name}<br>النتيجة: ${s.val().result}</div>`
+    :'لا توجد نتيجة';
     s_seat.value='';
   });
 }
 
 function clearDatabase(){
-  if(confirm('هل أنت متأكد من مسح كل البيانات؟')){
-    database.ref('students').remove()
-    .then(()=>{
-      alert('تم مسح قاعدة البيانات');
-      loadStudents();
-    });
-  }
+  if(confirm('مسح كل البيانات؟'))
+    database.ref('students').remove().then(loadStudents);
 }
 </script>
 
