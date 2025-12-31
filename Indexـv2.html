@@ -90,7 +90,6 @@ th,td{
 
 <body>
 
-<!-- النص التعريفي -->
 <div class="intro">
   <h1>منصة مدارس كفاح البروف</h1>
   <p>
@@ -102,14 +101,12 @@ th,td{
   </p>
 </div>
 
-<!-- الواجهة الرئيسية -->
 <div class="container" id="home">
   <h2>نظام النتائج المدرسية</h2>
   <button onclick="showTeacher()">واجهة المعلم</button>
   <button onclick="showStudent()">واجهة الطالب</button>
 </div>
 
-<!-- واجهة المعلم -->
 <div class="container hidden" id="teacher">
   <button class="back-btn" onclick="back()">⬅ رجوع</button>
 
@@ -143,7 +140,6 @@ th,td{
   </div>
 </div>
 
-<!-- واجهة الطالب -->
 <div class="container hidden" id="student">
   <h2>واجهة الطالب</h2>
   <input id="s_seat" placeholder="رقم الجلوس">
@@ -152,7 +148,6 @@ th,td{
   <button class="back-btn" onclick="back()">⬅ رجوع</button>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
